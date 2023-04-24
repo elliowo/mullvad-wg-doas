@@ -1,20 +1,15 @@
 # Mullvad WireGuard script  <img src="https://slethen.io/content/images/2017/01/mullvad-logo.png" align="left" width="40" height="40" alt="logo">
 Simple script that makes it easier to use Mullvad's VPN with WireGuard and OpenRC on Gentoo.
-Forked from Adi Hrustic
+
+This is a fork of [phvr script](https://github.com/phvr/mullvad-wg) that replaces sudo with [OpenDoas](https://github.com/Duncaen/OpenDoas)
+to not have to re-enter your password when connecting to the server use the persist feature in OpenDoas.
 
 <img src="https://i.imgur.com/QqBj2Rm.gif" align="right" alt="gif" width="515" height="412">
-
 
 ## Prerequisites
 * [Mullvad Account](https://mullvad.net/)
 * Gentoo Linux
 * A kernel able to run WireGuard
-
-## Installation
-Install phvr-overlay and do
-```
-# emerge -a mullvad-wg
-```
 
 ## Usage
 
@@ -104,8 +99,10 @@ mullvad help
 ```
 
 ## More information
+* [phvr script](https://github.com/phvr/mullvad-wg) - Script this is based on.
 * [Running WireGuard with Mullvad on Linux](https://mullvad.net/en/guides/wireguard-and-mullvad-vpn/) - Mullvad's official guide.
 * [WireGuard](https://www.wireguard.com/) - Official WireGuard website.
+* [OpenDoas](https://github.com/Duncaen/OpenDoa) - OpenDoas GitHub.
 
 ## Authors
 Adi Hrustic wrote this script - phvr forked it to adapt it to OpenRC and package it for Gentoo

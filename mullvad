@@ -25,12 +25,12 @@ startup() {
 		[[ $ENABLED != enabled ]] || \
                     error "Start-up server already set to: $START_UP"
 		echo -e '#!'"/bin/bash\nwg-quick up mullvad-$TARGET\nexit 0\n$TARGET" \
-                    | sudo tee $SCRIPT  > /dev/null
-        sudo chmod +x $SCRIPT
+                    | doas tee $SCRIPT  > /dev/null
+        doas chmod +x $SCRIPT
 
 	elif [[ $OPTION == "off" ]]; then
 		[[ $ENABLED == enabled ]] || error "No start-up server is set."
-		sudo rm $SCRIPT
+		doas rm $SCRIPT
 
 	elif [[ $OPTION == "show" ]]; then
 		[[ $ENABLED == enabled ]] || START_UP=EMPTY
@@ -119,12 +119,12 @@ kill_switch() {
 			#always remove the kill-switch
 			sourceFile="/etc/wireguard/mullvad-$ARG.conf"
 			umask 077
-			sudo awk '!/REJECT/' "$sourceFile" &>"/tmp/$ARG.tmp"
-			sudo mv "/tmp/$ARG.tmp" "$sourceFile"
-			sudo chown root: "$sourceFile"
+			doas awk '!/REJECT/' "$sourceFile" &>"/tmp/$ARG.tmp"
+			doas mv "/tmp/$ARG.tmp" "$sourceFile"
+			doas chown root: "$sourceFile"
 
 			#If cmd happens to be "on", just add the kill-switch back
-			[[ "$1" == "on" ]] && sudo sed -i "4a $PostUp\n$PreDown" "$sourceFile"
+			[[ "$1" == "on" ]] && doas sed -i "4a $PostUp\n$PreDown" "$sourceFile"
 		else
 			echo -e "${RED}Error: $ARG is not a valid server.${NC}"
 		fi
@@ -152,7 +152,7 @@ connect)
 	echo "# Connecting to ${TARGET_SERVER//*-/} #"
 	[[ $CURRENT_CONNECTION != $TARGET_SERVER ]] || error "already connected to ${TARGET_SERVER//*-/}."
 	[[ ! $CURRENT_CONNECTION ]] || server_change
-	sudo wg-quick up "$TARGET_SERVER" &>/dev/null || error "server does not exist, disconnecting."
+	doas wg-quick up "$TARGET_SERVER" &>/dev/null || error "server does not exist, disconnecting."
 	echo -e "${GREEN}Connected!${NC}"
 	
 	#Verifies connection, always done
@@ -162,7 +162,7 @@ connect)
 
 disconnect)
 	echo "# Disconnecting VPN #"
-	sudo wg-quick down "$CURRENT_CONNECTION" &>/dev/null || error "not connected."
+	doas wg-quick down "$CURRENT_CONNECTION" &>/dev/null || error "not connected."
 	echo -e "${GREEN}Disconnected${NC}"
 	;;
 
@@ -191,7 +191,7 @@ start-up)
 
 status)
 	[[ $CURRENT_CONNECTION ]] || error "not connected."
-	sudo wg show
+	doas wg show
 	;;
 
 update)
