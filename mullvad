@@ -282,14 +282,18 @@ case $COMMAND in
 	echo -e "  connect \t\t\t Connects to the default server."
 	echo -e "  connect <server>\t\t Connects to a specified server."
 	echo -e "  disconnect\t\t\t Disconnects from the active server."
-	echo -e "  kill-switch <on|off> <server>\t Changes the kill-switch value of specified server(s)."
-	echo -e "  list\t\t\t\t List available servers."
 	echo -e "  status\t\t\t Show current status of connection."
 	echo -e "  start-up <on|off> <server>\t Configures active server on system start-up."
 	echo -e "  start-up show\t\t\t Show currently set start-up server."
+	echo -e "  verify\t\t\t Verify your connection."
+	echo -e "  ---------------------------------------------"
+	echo -e "  list\t\t\t\t List available servers."
+	echo -e "  kill-switch <on|off> <server>\t Changes the kill-switch value of specified server(s)."
 	echo -e "  update default\t\t Sets a new default server."
 	echo -e "  update servers\t\t Updates the server list."
-	echo -e "  verify\t\t\t Verify your connection."
+	echo -e "  update rename\t\t\t Renames the files to be compatible."
+	echo -e "  update remove\t\t\t Removes files that start with mullvad out of /etc/wireguard/."
+
 	echo
 	echo -e "  help\t\t\t\t Brings up this help menu."
 	echo
