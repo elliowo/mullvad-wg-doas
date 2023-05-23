@@ -11,6 +11,12 @@ to not have to re-enter your password when connecting to the server use the pers
 * Gentoo Linux
 * A kernel able to run WireGuard
 
+## Installation
+Add [elliowo-overlay](https://github.com/elliowo/elliowo-overlay) to portage, sync and run.
+```
+# emerge -a mullvad-wg-doas
+```
+
 ## Usage
 
 ### Configuring the servers

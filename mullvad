@@ -6,145 +6,146 @@ NC='\033[0m'       # No Color
 
 #Error function
 error() {
-	echo -e "${RED}Error: $1${NC}" >&2
-	exit 1
+    echo -e "${RED}Error: $1${NC}" >&2
+    exit 1
 }
 
 startup() {
-	local TARGET OPTION START_UP ENABLED SCRIPT
-	OPTION=$1
-	TARGET=$2
-        SCRIPT="/etc/local.d/mullvad-wg.start"
-	#Checks to see if we already have a start-up server enabled
-	#If so, ENABLED will be set to 'enabled' and break the loop
-	ENABLED=disabled
-	[[ -f $SCRIPT ]] && \
-            ENABLED=enabled && START_UP=$(tail -n 1 $SCRIPT)
+    local TARGET OPTION START_UP ENABLED SCRIPT
+    OPTION=$1
+    TARGET=$2
+    SCRIPT="/etc/local.d/mullvad-wg.start"
+    #Checks to see if we already have a start-up server enabled
+    #If so, ENABLED will be set to 'enabled' and break the loop
+    ENABLED=disabled
+    [[ -f $SCRIPT ]] && \
+        ENABLED=enabled && START_UP=$(tail -n 1 $SCRIPT)
 
-	if [[ $OPTION == "on" ]]; then
-		[[ $ENABLED != enabled ]] || \
-                    error "Start-up server already set to: $START_UP"
-		echo -e '#!'"/bin/bash\nwg-quick up mullvad-$TARGET\nexit 0\n$TARGET" \
-                    | doas tee $SCRIPT  > /dev/null
+    if [[ $OPTION == "on" ]]; then
+	[[ $ENABLED != enabled ]] || \
+            error "Start-up server already set to: $START_UP"
+	echo -e '#!'"/bin/bash\nwg-quick up mullvad-$TARGET\nexit 0\n$TARGET" \
+            | doas tee $SCRIPT  > /dev/null
         doas chmod +x $SCRIPT
 
-	elif [[ $OPTION == "off" ]]; then
-		[[ $ENABLED == enabled ]] || error "No start-up server is set."
-		doas rm $SCRIPT
+    elif [[ $OPTION == "off" ]]; then
+	[[ $ENABLED == enabled ]] || error "No start-up server is set."
+	doas rm $SCRIPT
 
-	elif [[ $OPTION == "show" ]]; then
-		[[ $ENABLED == enabled ]] || START_UP=EMPTY
-		echo -e "${GREEN}Current start-up is set to: ${START_UP}${NC}"
-		exit 0
+    elif [[ $OPTION == "show" ]]; then
+	[[ $ENABLED == enabled ]] || START_UP=EMPTY
+	echo -e "${GREEN}Current start-up is set to: ${START_UP}${NC}"
+	exit 0
 
-	else
-		error "Bad input."
-	fi
-	echo -e "${GREEN}Done! Changes will apply on next reboot.${NC}"
+    else
+	error "Bad input."
+    fi
+    echo -e "${GREEN}Done! Changes will apply on next reboot.${NC}"
 
 }
 
 verify_connection() {
-	local TARGET
-	echo "# Verifying connection #"
-	TARGET=$(curl -s https://am.i.mullvad.net/json | jq -r .mullvad_exit_ip_hostname)
-	[[ "${TARGET//-*/}" == "${CURRENT_CONNECTION//*-/}" ]] || error "NOT able to verify!"
-	echo -e "${GREEN}Connection verified!${NC}"
+    local TARGET
+    echo "# Verifying connection #"
+    TARGET=$(curl -s https://am.i.mullvad.net/json | jq -r .mullvad_exit_ip_hostname)
+    [[ "${TARGET//-*/}" == "${CURRENT_CONNECTION//*-/}" ]] || error "NOT able to verify!"
+    echo -e "${GREEN}Connection verified!${NC}"
 }
 
 update_default() {
-	echo "# Updating default server #"
-	local ANS
-	echo -n "Please select the name of your default server (e.g. se1): "
-	while :; do
-		read ANS
-		[[ ! $ANS =~ ^$ ]] && break
-		echo -en "\nInvalid input, please try again: "
-	done
-	echo $ANS >$HOME/.config/mullvad/default.txt
-	DEFAULT_SERVER=$ANS
-	echo -e "${GREEN}Default set to $ANS!${NC}"
+    echo "# Updating default server #"
+    local ANS
+    echo -n "Please select the name of your default server (e.g. se1): "
+    while :; do
+	read ANS
+	[[ ! $ANS =~ ^$ ]] && break
+	echo -en "\nInvalid input, please try again: "
+    done
+    echo $ANS >$HOME/.config/mullvad/default.txt
+    DEFAULT_SERVER=$ANS
+    echo -e "${GREEN}Default set to $ANS!${NC}"
 }
 
 server_change() {
-	local ANS
-	echo -e "${RED}Error: you're currently connected to ${CURRENT_CONNECTION//*-/}.${NC}"
-	echo -n "Do you wish to change to ${TARGET_SERVER//*-/}? [Y/n] "
-	while :; do
-		read ANS
-		[[ $ANS =~ ^(y|Y|^$)$ ]] && $0 disconnect &>/dev/null && break
-		[[ $ANS =~ ^(n|N)$ ]] && error "aborted."
-		echo -n "Invalid input, please try again [Y/n] "
-	done
-	echo -e "# Reconnecting #"
+    local ANS
+    echo -e "${RED}Error: you're currently connected to ${CURRENT_CONNECTION//*-/}.${NC}"
+    echo -n "Do you wish to change to ${TARGET_SERVER//*-/}? [Y/n] "
+    while :; do
+	read ANS
+	[[ $ANS =~ ^(y|Y|^$)$ ]] && $0 disconnect &>/dev/null && break
+	[[ $ANS =~ ^(n|N)$ ]] && error "aborted."
+	echo -n "Invalid input, please try again [Y/n] "
+    done
+    echo -e "# Reconnecting #"
 }
 
 kill_switch_verify() {
-	local ANS
-	sleep 1
-	echo -n "You are trying to change the kill-switch value of a server you're currently connected to. "
-	echo "This requires disconnecting from the server before proceeding."
-	echo
-	echo -n "Do you wish to continue? [Y/n] "
-	while :; do
-		read ANS
-		[[ $ANS =~ ^(y|Y|^$)$ ]] && KS_YES=true && break
-		[[ $ANS =~ ^(n|N)$ ]] && break
-		echo -n "Invalid input, please try again [Y/n] "
-	done
+    local ANS
+    sleep 1
+    echo -n "You are trying to change the kill-switch value of a server you're currently connected to. "
+    echo "This requires disconnecting from the server before proceeding."
+    echo
+    echo -n "Do you wish to continue? [Y/n] "
+    while :; do
+	read ANS
+	[[ $ANS =~ ^(y|Y|^$)$ ]] && KS_YES=true && break
+	[[ $ANS =~ ^(n|N)$ ]] && break
+	echo -n "Invalid input, please try again [Y/n] "
+    done
 }
 
 kill_switch() {
-	local PostUp PreDown
-	echo -e "# Turning $1 kill-switch #"
-	PostUp="iptables -I OUTPUT ! -o %i -m mark ! --mark \$(wg show %i fwmark) -m addrtype ! --dst-type LOCAL -j REJECT"
-	PostUp=${PostUp/*/"PostUp = $PostUp && ${PostUp//ip/ip6}"}
-	PreDown=${PostUp//-I/-D}
-	PreDown=${PreDown//PostUp/PreDown}
-	#If all servers were specified, we change to this value
-	[[ $2 == all ]] && set "$1" "$AVAILABLE_SERVERS"
-	for ARG in ${2}; do
-		#Check if valid syntax
-		[[ ! $ARG =~ ^([a-z]{2}[0-9]{1,2})$ ]] && \
-                    echo -e "${RED}Error: invalid input $ARG.${NC}" && continue
+    local PostUp PreDown
+    echo -e "# Turning $1 kill-switch #"
+    PostUp="iptables -I OUTPUT ! -o %i -m mark ! --mark \$(wg show %i fwmark) -m addrtype ! --dst-type LOCAL -j REJECT"
+    PostUp=${PostUp/*/"PostUp = $PostUp && ${PostUp//ip/ip6}"}
+    PreDown=${PostUp//-I/-D}
+    PreDown=${PreDown//PostUp/PreDown}
+    #If all servers were specified, we change to this value
+    [[ $2 == all ]] && set "$1" "$AVAILABLE_SERVERS"
+    for ARG in ${2}; do
+	#Check if valid syntax
+	[[ ! $ARG =~ ^([a-z]{2}[0-9]{1,2})$ ]] && \
+            echo -e "${RED}Error: invalid input $ARG.${NC}" && continue
 
-		#Security check, see kill_switch_verify function above
-		if [[ "${CURRENT_CONNECTION//*-/}" == "$ARG" ]]; then
-			kill_switch_verify
-			[[ $KS_YES ]] || continue
-			"$0" disconnect &>/dev/null
-		fi
+	#Security check, see kill_switch_verify function above
+	if [[ "${CURRENT_CONNECTION//*-/}" == "$ARG" ]]; then
+	    kill_switch_verify
+	    [[ $KS_YES ]] || continue
+	    "$0" disconnect &>/dev/null
+	fi
 
-		if grep -q "$ARG" <<<"$AVAILABLE_SERVERS"; then
-			#always remove the kill-switch
-			sourceFile="/etc/wireguard/mullvad-$ARG.conf"
-			umask 077
-			doas awk '!/REJECT/' "$sourceFile" &>"/tmp/$ARG.tmp"
-			doas mv "/tmp/$ARG.tmp" "$sourceFile"
-			doas chown root: "$sourceFile"
+	if grep -q "$ARG" <<<"$AVAILABLE_SERVERS"; then
+	    #always remove the kill-switch
+	    sourceFile="/etc/wireguard/mullvad-$ARG.conf"
+	    umask 077
+	    doas awk '!/REJECT/' "$sourceFile" &>"/tmp/$ARG.tmp"
+	    doas mv "/tmp/$ARG.tmp" "$sourceFile"
+	    doas chown root: "$sourceFile"
 
-			#If cmd happens to be "on", just add the kill-switch back
-			[[ "$1" == "on" ]] && doas sed -i "4a $PostUp\n$PreDown" "$sourceFile"
-		else
-			echo -e "${RED}Error: $ARG is not a valid server.${NC}"
-		fi
-	done
+	    #If cmd happens to be "on", just add the kill-switch back
+	    [[ "$1" == "on" ]] && doas sed -i "4a $PostUp\n$PreDown" "$sourceFile"
+	else
+	    echo -e "${RED}Error: $ARG is not a valid server.${NC}"
+	fi
+    done
 
-	[[ ! $KS_YES ]] && echo -e "${GREEN}Done.${NC}" && exit 1
-	#Enables and verifies connection again (optional), see above
-	echo "# Reconnecting #"
-	"$0" connect "${CURRENT_CONNECTION//*-/}" &>/dev/null && "$0" verify
+    [[ ! $KS_YES ]] && echo -e "${GREEN}Done.${NC}" && exit 1
+    #Enables and verifies connection again (optional), see above
+    echo "# Reconnecting #"
+    "$0" connect "${CURRENT_CONNECTION//*-/}" &>/dev/null && "$0" verify
 }
 
 #The syntax ${2:-DEFAULT_SERVER} expands to default server if $2 is unset or is set to the empty string.
 #If no default server has been set, the user will be prompted to choose one.
 COMMAND=$1
 DEFAULT_SERVER=$(cat $HOME/.config/mullvad/default.txt 2>/dev/null)
+WIREGUARD_DIRECTORY="/etc/wireguard"
 CURRENT_CONNECTION=$(wg show interfaces)
 AVAILABLE_SERVERS=$(awk -F'[:]' '{print $1" "}' $HOME/.config/mullvad/*servers.txt 2>/dev/null)
 
 case $COMMAND in
-connect)
+    connect)
 	#Default server check
 	[[ -z "$DEFAULT_SERVER" ]] && echo -e "${RED}Error: Default server needs to be set.${NC}" && update_default
 	TARGET_SERVER=mullvad-${2:-$DEFAULT_SERVER}
@@ -160,77 +161,122 @@ connect)
 	verify_connection
 	;;
 
-disconnect)
+    disconnect)
 	echo "# Disconnecting VPN #"
 	doas wg-quick down "$CURRENT_CONNECTION" &>/dev/null || error "not connected."
 	echo -e "${GREEN}Disconnected${NC}"
 	;;
 
-kill-switch)
+    random)
+	echo "You are currently connected to ${CURRENT_CONNECTION}."
+	echo "Enter two char country code (e.g. no):"
+	read COUNTRY_CODE
+
+	RANDOM_SERVER=$(basename "$(doas find /etc/wireguard/ -name "mullvad-$COUNTRY_CODE*" | shuf -n 1)" .conf)
+	echo $RANDOM_SERVER
+	echo "Connecting to ${RANDOM_SERVER} #"
+	doas wg-quick up "$RANDOM_SERVER" &>/dev/null || error "server does not exist, disconnecting."
+	;;
+
+    kill-switch)
 	TARGET_SERVER=${3:-$DEFAULT_SERVER}
 	[[ $2 =~ on|off ]] || error "Invalid choice, aborting."
 	kill_switch "$2" "$TARGET_SERVER"
 	;;
 
-list | ls | l)
+    list | ls | l)
 	#Option to view current default server
 	if [[ $2 == default ]]; then
-		echo -e "${GREEN}Default server is set to: $DEFAULT_SERVER${NC}"
-		exit 0
+	    echo -e "${GREEN}Default server is set to: $DEFAULT_SERVER${NC}"
+	    exit 0
 	fi 
 	echo "# Available servers #"
 	echo "---------------------"
 	echo -e "$(cat $HOME/.config/mullvad/*servers.txt)" || error "no server list found. Try updating."
 	;;
 
-start-up)
+    start-up)
 	TARGET_SERVER=${3:-$DEFAULT_SERVER}
 	[[ $(grep "$TARGET_SERVER" <<< "$AVAILABLE_SERVERS") ]] || error "Invalid server, aborting."
 	startup "$2" "$TARGET_SERVER"
 	;;
 
-status)
+    status)
 	[[ $CURRENT_CONNECTION ]] || error "not connected."
 	doas wg show
 	;;
 
-update)
+    update)
 	if [[ $2 == "default" ]]; then
-		update_default
+	    update_default
 
 	elif [[ $2 == "servers" ]]; then
-		[[ $UID != 0 ]] || error "this command should not be run as root."
-		echo "# Fetching server list #"
-		curl -sLO https://mullvad.net/media/files/mullvad-wg.sh
-		chmod +x ./mullvad-wg.sh
+	    [[ $UID != 0 ]] || error "this command should not be run as root."
+	    echo "# Fetching server list #"
+	    curl -sLO https://mullvad.net/media/files/mullvad-wg.sh
+	    chmod +x ./mullvad-wg.sh
 
-		#Reads the output when running mullvad config file
-		while read -r line; do
-			[[ $line =~ ^[^\[]+:$ ]] && REGIONS+=("${line:2:-1}")
-			[[ $line =~ wg-quick ]] && CODES+=("${line/*mullvad-/}")
-		done <<<"$(. mullvad-wg.sh)"
+	    #Reads the output when running mullvad config file
+	    while read -r line; do
+		[[ $line =~ ^[^\[]+:$ ]] && REGIONS+=("${line:2:-1}")
+		[[ $line =~ wg-quick ]] && CODES+=("${line/*mullvad-/}")
+	    done <<<"$(. mullvad-wg.sh)"
 
-		#Stores each code and region in an array, then sorts it alphabetically after code
-		for i in ${!CODES[*]}; do
-			echo -e "${CODES[$i]}:\t${REGIONS[$i]}" >>/tmp/ms.txt
-		done
-                CONFDIR=$HOME/.config/mullvad
-                [[ -d $CONFDIR ]] || mkdir -p $CONFDIR
-		sort --version-sort /tmp/ms.txt > $CONFDIR/mullvad_servers.txt
-		rm /tmp/ms.txt ./mullvad-wg.sh
-		"$0" list
+	    #Stores each code and region in an array, then sorts it alphabetically after code
+	    for i in ${!CODES[*]}; do
+		echo -e "${CODES[$i]}:\t${REGIONS[$i]}" >>/tmp/ms.txt
+	    done
+            CONFDIR=$HOME/.config/mullvad
+            [[ -d $CONFDIR ]] || mkdir -p $CONFDIR
+	    sort --version-sort /tmp/ms.txt > $CONFDIR/mullvad_servers.txt
+	    rm /tmp/ms.txt ./mullvad-wg.sh
+	    "$0" list
 
+	    
+	elif [[ $2 == "rename" ]]; then
+	    
+	    echo "renaming servers in /etc/wireguard directory, this should be run after update servers"
+	    for file in "$WIREGUARD_DIRECTORY"/*; do
+		if [ -f "$file" ]; then
+		    original_name=$(basename "$file")
+
+		    if [[ $original_name == *"tor"* ]]; then
+			echo "Skipping file: $original_name (contains 'tor')"
+			continue
+		    fi
+
+		    #echo ${#original_name}
+		    if [ ${#original_name} -lt 19 ]; then
+		        echo "File already renamed: $original_name -> $modified_name"
+		    else
+			modified_name="mullvad-$(echo "$original_name" | awk -F'-' '{print $2}')$(echo "$original_name" | awk -F'-' '{print $NF}')"
+			mv "$file" "$WIREGUARD_DIRECTORY/$modified_name"
+			echo "Renamed: $original_name -> $modified_name"
+		    fi
+
+		fi
+	    done
+
+	elif [[ $2 == "remove" ]]; then
+	    echo "clearing out /etc/wireguard files that start with mullvad, should be run with root"
+	    for file in "$WIREGUARD_DIRECTORY"/mullvad*; do
+		if [ -f "$file" ]; then
+		    echo "Removing file: $file"
+		    rm "$file"
+		fi
+	    done
+	    
 	else
-		error "unknown command, use '$(basename "$0") help' for help."
+	    error "unknown command, use '$(basename "$0") help' for help."
 	fi
 	;;
 
-verify)
+    verify)
 	[[ $CURRENT_CONNECTION ]] || error "not connected."
 	verify_connection
 	;;
 
-help | -h)
+    help | -h)
 	echo "Usage: $(basename "$0") <cmd> <server>" >&2
 	echo
 	echo -e "  connect \t\t\t Connects to the default server."
@@ -249,7 +295,7 @@ help | -h)
 	echo
 	;;
 
-*)
+    *)
 	error "unknown command, use '$(basename "$0") help' for help."
 	;;
 esac
